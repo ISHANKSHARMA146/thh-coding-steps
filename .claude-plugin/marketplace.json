@@ -1,0 +1,16 @@
+{
+  "name": "thh",
+  "owner": {
+    "name": "TheHireHub",
+    "url": "https://github.com/ishanksharma146"
+  },
+  "plugins": [
+    {
+      "name": "thh-coding-steps",
+      "source": "./",
+      "description": "Start-to-end coding steps for THH: grill, research, plan, impact, gap audit, mockup, execute, review, test, audit.",
+      "version": "0.1.0"
+    }
+  ],
+  "description": "TheHireHub internal Claude Code plugins."
+}
