@@ -21,7 +21,7 @@ All state lives in `<workspace>/.thh/<task-slug>/`. No step relies on chat memor
 
 ## Install
 
-Private marketplace, authenticated with the git credentials you already have (`gh auth login` is enough):
+Public repo, doubles as a one-plugin marketplace named `thh`. From any terminal:
 
 ```bash
 claude plugin marketplace add ishanksharma146/thh-coding-steps
@@ -41,7 +41,7 @@ That drops a one-line pointer to the single standards copy into each repo's `CLA
 
 Local development: `claude --plugin-dir C:\thehirehub\claude-skills\thh-coding-steps`, then `/reload-plugins` after edits.
 
-Requirements: Node 20+, git, `gh`. Backend checks use `C:\thhvenv\Scripts\python.exe` (override with `THH_PYTHON`).
+Requirements: Node 20+ and git. Verified 2026-09-14: marketplace add, install (scope: user) and a headless run of the installed copy. Backend checks use `C:\thhvenv\Scripts\python.exe` (override with `THH_PYTHON`).
 
 ## Use
 
