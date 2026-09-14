@@ -48,7 +48,9 @@ function main() {
   const base = path.basename(p);
 
   if (SECRET.test(p)) { log('deny', 'secret path'); return deny('scope-guard: ' + target + ' is a secrets/data path. Never read or write it.'); }
-  if (under(task) || under(plugin) || under(ws + '/.thh') || ['claude.md', 'agents.md', 'thh-code-standards.md'].includes(base)) { log('allow', 'always-allowed'); process.exit(0); }
+  // Claude Code parks oversized tool output under ~/.claude/projects/<proj>/<session>/tool-results/; agents must be able to read it back.
+  const toolResults = /\/\.claude\/projects\/[^\/]+\/[^\/]+\/tool-results\//.test(p);
+  if (under(task) || under(plugin) || under(ws + '/.thh') || toolResults || ['claude.md', 'agents.md', 'thh-code-standards.md'].includes(base)) { log('allow', 'always-allowed'); process.exit(0); }
 
   // Roots: worktrees for this task first, then the main repo checkouts.
   const roots = [];

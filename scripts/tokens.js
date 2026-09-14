@@ -18,11 +18,14 @@ function main() {
   if (!m) return;
   const n = Number(m[1]);
   const st = L.readStatus(); if (!st) return;
+  // Diagnostic: record which fields the hook input carried, so a zero count can be explained.
+  fs.appendFileSync(path.join(L.taskDir(), 'tokens.log'), [L.nowIso(), h.agent_type, 'input-keys', Object.keys(h).join(','), h.agent_transcript_path || '', h.transcript_path || ''].join('\t') + '\n');
   const own = h.agent_transcript_path && fs.existsSync(h.agent_transcript_path);
   const file = own ? h.agent_transcript_path : h.transcript_path;
   if (!file || !fs.existsSync(file)) return;
   const since = own ? 0 : Date.parse(st.steps[n].started_at || 0);
   let total = 0;
+  const br = { input: 0, output: 0, cache_read: 0, cache_create: 0, calls: 0 };
   for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
     if (!line.trim()) continue;
     let e; try { e = JSON.parse(line); } catch (_) { continue; }
@@ -32,10 +35,14 @@ function main() {
       if (ts && ts < since) continue;
       if (h.agent_id && e.agentId && e.agentId !== h.agent_id) continue;
     }
+    br.input += u.input_tokens || 0; br.output += u.output_tokens || 0;
+    br.cache_read += u.cache_read_input_tokens || 0; br.cache_create += u.cache_creation_input_tokens || 0; br.calls++;
     total += (u.input_tokens || 0) + (u.output_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0);
   }
   if (!total) return;
+  // total = billed tokens summed over every API call (cache reads count once per call), so it grows with turns, not just with new text.
   st.steps[n].tokens_approx = (st.steps[n].tokens_approx || 0) + total;
+  st.steps[n].tokens_breakdown = br;
   st.steps[n].tokens_source = own ? 'agent-transcript' : 'main-transcript-window';
   L.writeStatus(st);
   fs.appendFileSync(path.join(L.taskDir(), 'tokens.log'), [L.nowIso(), h.agent_type, total, st.steps[n].tokens_source].join('\t') + '\n');

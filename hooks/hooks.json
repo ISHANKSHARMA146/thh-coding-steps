@@ -14,7 +14,7 @@
     ],
     "SubagentStop": [
       {
-        "matcher": "step-",
+        "matcher": "^thh-coding-steps:step-.*",
         "hooks": [
           {
             "type": "command",

@@ -74,6 +74,7 @@ const cases = [
   ['step-8 tester reads app code', guard(A + 'step-8-test', 'Read', path.join(wt, 'services/jobs/routes.py')), 'deny'],
   ['step-9 crosscheck reads audit.md', guard(A + 'step-9-crosscheck', 'Read', path.join(td, 'audit.md')), 'allow'],
   ['any step reads secrets', guard(A + 'step-3-impact', 'Read', path.join(ws, 'env-backups/x.env')), 'deny'],
+  ['step-6 reads a parked tool result', guard(A + 'step-6-execute', 'Read', path.join(os.homedir(), '.claude', 'projects', 'C--x', 'sess', 'tool-results', 'abc.txt')), 'allow'],
   ['foreign agent passes through', guard('general-purpose', 'Read', path.join(ws, 'env-backups/x.env')), 'allow'],
   ['main thread (no agent_type) passes through', guard('', 'Read', path.join(ws, 'thh-backend/app.py')), 'allow'],
 ];
