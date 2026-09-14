@@ -35,6 +35,12 @@ Apply to both stacks.
 - **U-21 Imports at module top,** except a deliberate, commented lazy import.
 - **U-22 No em-dashes in user-facing copy or in prose docs.** Use commas, colons or parentheses. (anti-slop 3.1)
 
+### 0.1 Logging and sensitive data
+
+- **U-23 One logger per module, created once at module top.** Backend: `logger = logging.getLogger(__name__)`. That is the repo's dominant pattern (187 modules use `logging.getLogger`; only `services/sourcing/routes.py` uses `current_app.logger`, and it is the outlier). Never `print()` in service code, never a logger created inside a function, never a second logger name for the same module.
+- **U-24 Levels mean something.** DEBUG is local detail. INFO is a completed state change worth auditing. WARNING is a handled degradation. ERROR is a failed operation, and inside an `except` it is `logger.exception(...)` so the traceback is attached (`app.py:323` does this correctly). CRITICAL only when the process cannot continue. An expected 404 or a validation failure is not an ERROR.
+- **U-25 Log identifiers, never payloads.** Carry the structured context every line needs: request id, `user_id`, `company_id`, and the id of the entity acted on, passed as lazy `%s` arguments rather than interpolated into the message. Never log a JWT, the `thh_auth` cookie, an API key, a candidate name, email or phone number, resume or transcript text, or an LLM prompt or completion that contains any of those. If you need to see shape, log the count and the ids.
+
 ---
 
 ## 1. Backend (Flask 3, SQLAlchemy 2, Alembic, MySQL)
@@ -121,17 +127,21 @@ except Exception:
 
 ```python
 {"success": True,  "data": {...}, "message": "optional human string"}
-{"success": False, "error": "what went wrong"}
+{"success": False, "error": {"code": "not_found", "message": "Job not found"}}
 ```
+
+The `error` object with a machine-readable `code` is the contract (section 1.11). Older endpoints still return `"error": "a bare string"`; that is legacy, and anything you touch moves to the object form.
 
 - **B-28** Return a real status code. Never 200 with an error body. 200 read/update/delete, 201 create, 400 validation, 401 unauthenticated, 403 authenticated but not permitted, 404 missing, 500 unexpected.
 - **B-29** A permission failure is 403, not 404, unless hiding existence is the deliberate design, in which case say so in a comment.
 - **B-30** A single module-level error helper keeps the error path from drifting:
 
 ```python
-def _err(msg: str, status: int):
-    return jsonify({"success": False, "error": msg}), status
+def _err(code: str, msg: str, status: int):
+    return jsonify({"success": False, "error": {"code": code, "message": msg}}), status
 ```
+
+`_err` is the only place an error code is attached. A handler that builds the error dict inline will drift.
 
 - **B-31** No second endpoint that differs from an existing one only in which rows it returns. Branch on the caller's type inside the one handler and pick the CRUD method. Why: two endpoints drift apart independently.
 - **B-32** No duplicated query logic across CRUD classes. One method, called twice.
@@ -231,7 +241,17 @@ Run against the diff (U-02).
 - [ ] CRUD returns dicts / lists / primitives; no ORM instance, `Row` or `Result` crosses the boundary. (B-08)
 - [ ] Lookup miss returns `None` / `False`; the route chooses the status code. (B-25)
 - [ ] Response envelope is `{"success": ..., "data"/"error": ...}` with a real status code. (B-27, B-28)
+- [ ] The `error` object carries a `code` from the known set, attached via `_err`. (B-65, B-67)
 - [ ] 403 for "not permitted", 404 for "does not exist", deliberately chosen. (B-29)
+- [ ] A list endpoint takes bounded `page` / `per_page` and returns `items` / `total` / `page` / `per_page`. (B-68 to B-71)
+
+**Auth, secrets and logging**
+- [ ] Every route has `@verify_auth_token`, or a commented reason it is public. (B-72)
+- [ ] Role checks go through a helper, not an inline `role ==` comparison. (B-73)
+- [ ] `company_id` scoping is in the CRUD WHERE clause, not in the route. (B-74)
+- [ ] The deny path has a test. (B-75)
+- [ ] No secret in code, migration or fixture; a new one is in `env.example` with no value. (B-62, B-63)
+- [ ] No token, cookie, candidate PII, resume text or personal LLM prompt in a log line. (U-25)
 
 **Models and migrations**
 - [ ] A schema change has a matching revision, and a revision has a matching model change. (B-46)
@@ -308,6 +328,35 @@ All 42 `crud.py` files use `db.session`; the ORM is the mainstream path. `app_ex
 - **Cursor rule files in this repo are stale.** `.cursorrules` references `@../rules.md`, which does not exist anywhere in `C:\thehirehub`. Its content described the pre-ORM architecture. Do not follow it; this file supersedes it. The repo's own `CLAUDE.md` is current and does not conflict.
 - **Verification quirk.** A real case from this repo: a reengagement hook read `job_id` from the route's return dict; a direct call supplied it and passed, while the live route's trimmed dict made the hook silently no-op. Exercise the route.
 
+### 1.11 Secrets, and error codes
+
+**Secrets**
+
+- **B-61** Every secret comes from the environment. `load_dotenv()` is called exactly once, at boot (`app.py:41`); everything downstream reads the already-loaded values. Do not add a second `load_dotenv()` to a service module. A new secret gets one named accessor in the domain's config module, not a fresh `os.getenv` at each use site. (189 modules read `os.environ` / `os.getenv` directly, measured 2026-09-14. That is debt under U-03, not precedent.)
+- **B-62** Never hardcode a credential, API key, token, connection string or webhook signing secret in Python, in an Alembic revision, in a test fixture or in a docstring. A revision that genuinely needs a secret reads it from the environment and raises when it is absent.
+- **B-63** `.env` is never committed. A new secret means a matching key in `env.example` with no value, plus a comment saying how to obtain it, so a fresh checkout fails at boot naming the missing key instead of failing at runtime inside a provider call.
+- **B-64** `env-backups/` holds real staging secrets and is off limits to agents: never read, copy, print or diff it. If you need a real value, ask a human.
+
+**Error codes**
+
+- **B-65** The `error` object carries a stable snake_case `code` beside the human `message` (B-27). The initial set, and a caller may rely on every one of them: `validation_error` (400), `unauthorized` (401), `forbidden` (403), `not_found` (404), `conflict` (409), `rate_limited` (429), `internal` (500). Add a code only when a client genuinely has to branch on it.
+- **B-66** The `code` is the contract; the `message` is copy. Reword a message freely. Renaming or removing a code is a breaking change and the frontend caller changes in the same branch.
+- **B-67** Attach codes only through `_err` (B-30). A handler assembling the error dict by hand is how a typo'd code reaches production silently.
+
+### 1.12 Pagination contract
+
+- **B-68** List endpoints paginate with `page` and `per_page`. That is the repo's dominant pattern (39 occurrences across `services/*/routes.py`, for example `services/candidate/routes.py:2001`). The `limit` / `offset` pairs elsewhere are legacy; do not add another.
+- **B-69** Bound both. `page` defaults to 1 and is at least 1. `per_page` defaults to 20 and is capped at 100. Out of range is 400 `validation_error`, not a silent clamp. `services/candidate/routes.py:2018` caps `per_page` at 10000, which is not a bound; do not copy it.
+- **B-70** The success payload under `data` is `{"items": [...], "total": n, "page": p, "per_page": n}`. `total` is the row count before the page slice, so the client can render the pager without a second call.
+- **B-71** No unbounded list endpoint. An endpoint returning every row a tenant owns is a defect even while that tenant is small.
+
+### 1.13 Authorization
+
+- **B-72** Every route carries `@verify_auth_token`. Deny by default: an undecorated route is a finding, not an oversight. The only exceptions are endpoints that are public by design (provider webhooks with their own signature check, the public application form), and each states why in a comment on the handler.
+- **B-73** Role checks go through one helper per role, applied under `@verify_auth_token`. `require_thh_admin` (`services/admin/routes.py:92`) is the shape to copy: it reads the acting user once, returns 403 with a code, and stashes the row on `request` for the handler. An inline `role == 'admin'` comparison inside a handler is a finding (14 such comparisons measured 2026-09-14).
+- **B-74** Company scoping lives in CRUD, not in the route. The CRUD method takes `company_id` and puts it in the WHERE clause; the route supplies the acting user's company and never filters the returned rows itself. Why: a filter written in the route is absent for the next caller of the same CRUD method, which is exactly how B-19 gets violated.
+- **B-75** Every authorization rule has a test for the **deny** path: a user of company A asking for company B's resource gets 403, or 404 where hiding existence is the deliberate choice (B-29). A test that only exercises the allow path proves nothing about the gate.
+
 ---
 
 ## 2. Frontend (Next.js 15 App Router, React 19, TypeScript, TanStack Query 5, Zustand 5, react-hook-form + Zod, Tailwind, shadcn/Radix)
@@ -332,7 +381,7 @@ The one-paragraph version: server data belongs to TanStack Query. Client state b
 - **F-06** Zustand v5: import named, `import { create } from 'zustand'`. Export hooks and atomic selectors, never the raw store.
 - **F-07** Never create a store inside a component. It re-creates on every render.
 - **F-08** Update immutably. `set` merges shallowly; spread nested objects yourself.
-- **F-09** Persist deliberately with `partialize`. Never persist tokens or server caches.
+- **F-09** Persist deliberately with `partialize`, per store that persists. The repo keeps 15 separate stores and is not migrating to one bound store, so each persisting store declares its own `partialize` rather than inheriting a shared one. Never persist tokens or server caches.
 - **F-10** Derive computed values in selectors, not by storing duplicated derived state.
 - **F-11** Add to the matching existing slice or store for a domain. Do not spin up a parallel store for the same domain.
 - **F-12** Migrating a store read to a query, when the change is contained: (1) add a key factory and a `useQuery` in a `use<Domain>` file calling the same service method; (2) replace each call site; (3) replace every post-write `fetchX()` with `invalidateQueries`; (4) delete the store's field, action, loading flag, error flag and module-level dedup machinery in the same change; (5) type check, then exercise every screen that read the field. When the change is not contained, leave the store alone and say so. A store field and a query for the same value is worse than either alone.
@@ -340,7 +389,7 @@ The one-paragraph version: server data belongs to TanStack Query. Client state b
 ### 2.2 Services and HTTP transport
 
 - **F-13** A service module is transport and types only: build the URL, call the shared wrapper, parse, return typed data. No business logic, no derived or computed values, no formatting, no caching, no React. If a service function has `if`-branches that shape business outcomes, that logic belongs in the hook or a pure util. (D2)
-- **F-14** A structured error class carrying `status` so callers can branch is allowed: that is transport metadata, not business logic. (D2)
+- **F-14** A structured error class carrying `status` so callers can branch is allowed at the **query function layer only**: that is transport metadata, not business logic. The service itself still returns the envelope and does not throw (F-22). (D2)
 - **F-15** No React import, no store import, no `queryClient` in a service. It must be callable from anywhere, including a test.
 - **F-16** One object export per domain, methods named for the operation, not the URL.
 - **F-17** Response interfaces live beside the call that produces them, in `services/<feature>/types.ts` or as `z.infer` of the request schema. Never hand-write a second interface mirroring a Zod schema or another service's type. (D4)
@@ -350,7 +399,10 @@ The one-paragraph version: server data belongs to TanStack Query. Client state b
 - **F-21** If a call needs behaviour the wrapper lacks, extend the wrapper. Do not fork it.
 - **F-22** The service returns the `{ success, data, error }` result object and does not throw; callers branch. The conversion of a failed result into a thrown error happens in the query function, not in the service.
 - **F-23** Errors surfaced to the user carry no URL, status code or the word "backend". Reuse the exported user-facing copy constants rather than writing new strings.
-- **F-24** A service file over about 400 lines is a defect. Split by sub-resource into a folder, with `index.ts` exposing only the public surface, and each file one cohesive resource. Split incrementally, never in one pass. (D3)
+- **F-159** Branch on the error `code`, never on the message text (B-65). A check like `error.message.includes("not found")` breaks the moment somebody improves the copy. Where a legacy endpoint still returns a bare string, treat the missing code as `internal` and fix the endpoint rather than parsing prose.
+- **F-24** A service file over about 400 lines is a defect. The cap binds **new services and net additions to existing ones**: adding lines to a file already over it is a finding even though the file itself is grandfathered. Split by sub-resource into a folder, with `index.ts` exposing only the public surface, and each file one cohesive resource. Split incrementally, never in one pass. (D3)
+
+  **Known debt, exempt until a split is scheduled as its own task** (measured 2026-09-14, `git ls-files src/services | xargs wc -l`): `src/services/job-service/service.ts` **2,195** lines, `src/services/candidate-service/service.ts` **1,563**, `src/services/interview-service/service.ts` **1,509**. Do not cite these as precedent (U-03), do not grow them, and do not open the split as a side quest.
 
 ```
 services/job/
@@ -403,6 +455,7 @@ Why a factory: prefix invalidation is meaningful because the hierarchy is real; 
 - **F-39** TanStack Query v5 API: single options object; `cacheTime` is `gcTime`; `keepPreviousData` is `placeholderData: keepPreviousData`; `useErrorBoundary` is `throwOnError`; `isInitialLoading` is `isLoading`; status `'loading'` is `'pending'`, and `isPending` means "no data yet".
 - **F-40** `onSuccess` / `onError` / `onSettled` were removed from `useQuery` and remain only on `useMutation`. Derive in render for side effects on query data.
 - **F-41** Pagination and infinite lists use `placeholderData: keepPreviousData` to avoid flashing between pages.
+- **F-160** Paginated lists mirror the backend contract (B-68 to B-71): the service sends `page` and `per_page`, **both appear in the query key** (F-28, or page 2 serves page 1's rows from cache), and the hook reads `data.items` and `data.total`. Never fetch an unbounded list and paginate it in the browser.
 - **F-42** No `useEffect` whose only job is to fetch on mount and set state. Why: it is a query without a cache, retry policy, deduplication or cancellation; it races on fast navigation and writes into an unmounted component.
 - **F-43** No hand-rolled cache machinery: in-flight promise dedup, module-level minimum refetch intervals, manual `loading`/`error` triples for one endpoint. Every one of those is a cache feature the query client already provides. Replace with a query; do not tidy it in place.
 
@@ -429,8 +482,8 @@ OK page.tsx        server
 - **F-49** `params`, `searchParams`, `cookies()`, `headers()`, `draftMode()` are async in Next 15. `await` them in a server component; `use(params)` in a client component. Destructuring directly is a build error. The codemod `npx @next/codemod@latest next-async-request-api .` migrates most call sites.
 - **F-50** Fetch caching is opt-in, not the Next 14 default. State the caching intent explicitly: `{ next: { revalidate: 3600 } }`, `{ cache: 'force-cache' }`, or `{ cache: 'no-store' }`. Segment config (`export const revalidate`, `export const dynamic`) still works, and the smallest `revalidate` on a page governs the page.
 - **F-51** GET Route Handlers are not cached by default. Add caching explicitly if needed. The Client Router Cache no longer caches page segments by default; opt back in with `experimental.staleTimes`.
-- **F-52** Route handlers under `src/app/api` are for work that must not reach the browser: secrets, redirects, webhooks. No pass-through proxy route that only forwards a call the client could make.
-- **F-53** Where a mutation is server-side, use a Server Action with `revalidatePath` / `revalidateTag` rather than a hand-rolled API route plus client fetch plus manual loading state. Treat every action as a public endpoint: validate input with the shared Zod schema and check authorization inside the action. Use `redirect()` for post-mutation navigation.
+- **F-52** **Every mutation goes through the client service layer and `authenticatedFetch` to Flask. No Server Actions, anywhere.** The product database sits behind Flask, so a Server Action would be a second transport to the same API with a second auth path. Route handlers under `src/app/api` remain only for work that must not reach the browser: secrets, redirects, provider webhooks. No pass-through proxy route that only forwards a call the client could make. The Zod schema on a form is UX; the real validation and authorization gate is the Flask route (B-72 to B-75), and it is not optional because the client validated first.
+- **F-53** retired (ruling C3, 2026-09-14).
 - **F-54** Only `page`, `layout`, `route`, `loading`, `error`, `not-found`, `template` and `default` are special. Colocating components, hooks and tests inside a route folder is encouraged.
 - **F-55** Route groups `(marketing)` organize without affecting the URL; parallel routes `@slot` and intercepting routes `(.)` enable dashboards and modals. Layouts persist across navigation; templates re-mount. Use layouts for shells.
 - **F-56** Stream with `loading.tsx` or `<Suspense>` so the shell paints immediately.
@@ -441,8 +494,8 @@ OK page.tsx        server
 ### 2.5 React 19 components and hooks
 
 - **F-60** `ref` is a normal prop. No `forwardRef`. Delete `forwardRef` wrappers when you touch them.
-- **F-61** If the React Compiler is enabled, do not hand-write `useMemo`, `useCallback` or `React.memo`; they add noise and can fight the compiler. If it is not enabled, memoize only genuinely hot paths and stable callbacks passed to memoized children. Either way, the fix for re-renders is correct state placement and narrow selectors.
-- **F-62** Use `useActionState` (not `useFormState`), `useFormStatus` and `useOptimistic` for native-form and Server Action flows. Async functions inside `startTransition` get automatic pending and error handling.
+- **F-61** The React Compiler is **not** enabled in `thh-frontend` (verified 2026-09-14: no `reactCompiler` in `next.config.ts`, no `babel-plugin-react-compiler` in `package.json`). So: memoize only measured hot paths and stable callbacks passed to memoized children. Every other hand-written `useMemo`, `useCallback` or `React.memo` is a finding. The fix for re-renders is correct state placement and narrow selectors, not a memo.
+- **F-62** `useOptimistic` for instant mutation feedback, and async functions inside `startTransition` for automatic pending and error handling. `useActionState` and `useFormStatus` are Server Action machinery and have no place here (F-52); forms go through react-hook-form plus a `useMutation`.
 - **F-63** `use()` reads a promise during render (Suspense-integrated) and can read context conditionally. Do not create the promise inside the component; pass it in or get it from a cache.
 - **F-64** Render document metadata in components where useful: `<title>`, `<meta>`, `<link>` hoist to `<head>`. Context provider shorthand is `<ThemeContext value={...}>`.
 - **F-65** `propTypes` and `defaultProps` on function components, legacy string refs and the legacy context API are removed. Replace them when found; use default parameters.
@@ -478,7 +531,7 @@ export type JobInput = z.infer<typeof jobSchema>;   // never hand-write this typ
 - **F-81** Error messages are user-facing copy. Write sentences a user can act on: "Enter a valid email address", not "Invalid email".
 - **F-82** Submit through a mutation, invalidate on success, `reset()` after success, and surface server errors with `setError`. Do not also write the response into a store.
 - **F-83** Disable the submit control while pending and say what is happening. A form that can be double-submitted will be.
-- **F-84** Validate with the **same** Zod schema on the server side of any Server Action or handler. The client schema is for UX; the server schema is the real gate, and it is the same object.
+- **F-84** retired (ruling C3, 2026-09-14). The real gate is the Flask route, not a reused TypeScript schema (F-52).
 - **F-85** Pick one form system per form. Do not mix React 19 action hooks and react-hook-form controllers on the same fields.
 - **F-86** Keep field-level components small and reuse them across forms instead of repeating `FormField` boilerplate.
 - **F-87b** Schemas are reviewable in one place, not inline in the component. The server-facing shape of a form belongs with the other schemas (`src/lib/schemas/` in this repo), or colocated in the feature folder where that feature already owns its schema file. Pick one per feature and do not split a schema across both.
@@ -492,7 +545,7 @@ export type JobInput = z.infer<typeof jobSchema>;   // never hand-write this typ
 - **F-91** Merge and condition classes with `cn()` (clsx + tailwind-merge). Never build classes with template-literal concatenation. Why: `cn()` resolves conflicts such as `p-2` against `p-4` correctly.
 - **F-92** Express component variants with `cva`, not conditional `className` soup assembled at three call sites. It collapses many branches into one declarative table.
 - **F-93** Compose with Radix `Slot` / `asChild` to attach behaviour to arbitrary children instead of duplicating wrappers. Keep primitives dumb and reusable; put feature logic in the feature component.
-- **F-93b** Extend a `components/ui` primitive by adding a `cva` variant or accepting more props, never by forking or re-implementing it. The one exception: a file that `shadcn add` regenerates must not be edited in place, because the next generation overwrites it and the loss is invisible in review. Wrap it and put the variation in the wrapper.
+- **F-93b** **The repo owns every file under `src/components/ui`. Nothing there is regenerated by `shadcn add`.** So extend a primitive in place: add a `cva` variant, accept another prop. Never wrap it, never fork it, never re-implement it. A wrapper around a primitive you own is the mechanism that produced the seven overlapping selects in F-141.
 - **F-94** Dark mode is class-based via `next-themes`: declare the dark variant once (`@custom-variant dark (&:where(.dark, .dark *));`), define light and dark token values under `:root` and `.dark`, then use `dark:` utilities.
 - **F-95** Do not reach for arbitrary values (`mt-[13px]`, `p-[7px]`, `gap-[13px]`) when a token or scale step exists. Stay on the 4px scale: `1/2/3/4/6/8/12/16`.
 - **F-96** `@apply` in a component-scoped stylesheet needs `@reference "../app/globals.css";` at the top of that file. Prefer utilities in JSX over `@apply`.
@@ -501,8 +554,10 @@ export type JobInput = z.infer<typeof jobSchema>;   // never hand-write this typ
 
 ### 2.8 Structure, composition and file size
 
-- **F-99** Feature-first. Keep a feature's components, hooks, queries, schemas and types together. Proximity beats a global `components/` dumping ground for feature code. Shared reusable UI goes in `components/ui` (shadcn primitives) and `components/` (shared composites).
-- **F-100** One-way dependency graph: `app/` to `components/` to `lib/`. `lib/` imports nothing from `components/` or `app/`. This keeps the server/client boundary clean and prevents circular deps.
+The layout is global, not feature-first, and the map in section 2.16 is the rule: `src/services`, `src/stores`, `src/hooks`, `src/types`, `src/lib/schemas`. A new file goes in the global directory for its kind, beside its neighbours (U-20). Shared reusable UI goes in `components/ui` (primitives) and `components/` (composites).
+
+- **F-99** retired (ruling C11, 2026-09-14).
+- **F-100** retired (ruling C11, 2026-09-14).
 - **F-101** `hooks/` and `stores/` are client-only. Anything importing them implicitly needs `"use client"`, and keeping them separate makes the boundary visible in the file tree.
 - **F-102** Naming: components `PascalCase`, hooks `useThing`, utilities `camelCase`, constants `UPPER_SNAKE_CASE`. File naming follows the neighbours (shadcn `ui/` is `kebab-case.tsx`, component files elsewhere commonly `PascalCase.tsx`). Do not mix conventions within one folder.
 - **F-103** Named exports only, except Next's required default `page` / `layout` / `route` / `error` / `loading`. Named exports make symbols greppable and refactors safe.
@@ -516,7 +571,7 @@ export type JobInput = z.infer<typeof jobSchema>;   // never hand-write this typ
 
 - **F-109** One library per job. Two packages doing the same thing is a defect: pick one, migrate, delete the other. Audit `package.json` for competing deps.
 - **F-110** Known duplicates in this repo, fix on sight: `framer-motion` + `motion` (standardize on `motion/react`, the renamed successor, same API); Tiptap + Lexical (pick one, do not add a third); multiple select/combobox libs (`react-select`, `cmdk`, Radix Select, `react-day-picker`) converge on the shadcn/Radix primitive, with `cmdk` for command palettes.
-- **F-111** Auth is `next-auth` **v4**, not v5/Auth.js. Read the session in Server Components or route handlers; never trust a client-only session for authorization. Do not copy Auth.js v5 `auth()` snippets. Keep mail config server-side only. The app token feeds `authenticatedFetch`; do not re-implement token plumbing in components.
+- **F-111** **There is no `next-auth` in this repo** (verified 2026-09-14: absent from `package.json`, no imports under `src/`). Auth is an httpOnly `thh_auth` cookie set by Flask at login, plus a legacy `Authorization: Bearer` JWT path that `initialize()`'s cookie-sync upgrade clears once a session is migrated. All of it lives in `src/utils/api.ts`: `authenticatedFetch` sends `credentials: "include"` and adds the `X-CSRF: 1` guard on non-GET cookie-authenticated requests. Do not re-implement token plumbing in a component, do not read the cookie from JS (it is httpOnly by design), and do not copy Auth.js or `next-auth` snippets into this codebase.
 - **F-112** Sanity content: queries and client under `src/sanity`, rendered with portable-text components, never `dangerouslySetInnerHTML` on raw HTML. Images go through `@sanity/image-url` (`urlFor`), never a hot-linked raw asset URL. Keep the read token server-side and fetch content in Server Components.
 - **F-113** TanStack Table v8: one column-def factory per table, `columns` kept stable (module-level) so the table does not thrash. Do not store derived, sorted or filtered server rows in state.
 - **F-114** Long lists use `@tanstack/react-virtual` so only visible rows render. A plain `.map()` over thousands of candidates is a perf defect. Paginate or virtualize; never render thousands of rows.
@@ -577,9 +632,9 @@ AI slop is plausible, polished code that ignores our system. It works, it is typ
 
 ### 2.14 Before calling frontend work done
 
-- **F-155** **Type check.** It is the check that gates the build; lint may be configured not to. Paste the real output. Zero errors, no exceptions.
-- **F-156** Run the tests. If the suite is small and green, any red is yours; fix it before reporting.
-- **F-157** Lint and format if the repo enforces them.
+- **F-155** **Type check.** `npm run typecheck`. Paste the real output. Zero errors, no exceptions.
+- **F-156** **Run the tests.** `npm test`. The suite is small and green, so any red is yours; fix it before reporting.
+- **F-157** **Lint must pass.** `npm run lint`, clean, alongside the type check and the tests. All three are the completion gate, and a change with lint errors is not complete. `next.config.ts` sets `eslint.ignoreDuringBuilds: true` so lint does not fail the local build, but `.github/workflows/ci.yml` runs it on every push and PR, so a lint error blocks the merge anyway. Run `npm run format` when it is formatting rather than a rule violation.
 - **F-158** Exercise the actual screen for a UI change. A passing type check proves the shapes line up, not that the feature works.
 
 ### 2.15 Frontend review checklist
@@ -617,12 +672,14 @@ Run against the diff (U-02).
 - [ ] `"use client"` only where required, on the smallest leaf. (F-45, F-46)
 - [ ] `params` / `searchParams` / `cookies()` / `headers()` awaited in server components, `use()` in client. (F-49)
 - [ ] Caching intent stated rather than assumed. (F-50)
-- [ ] No pass-through API route that only forwards a call the client could make. (F-52)
-- [ ] Server Actions validate input with the shared schema and check authorization. (F-53)
+- [ ] No pass-through API route that only forwards a call the client could make; no Server Action. (F-52)
 - [ ] No server env imported into a client component. (F-59)
 
 **Components, styling and forms**
-- [ ] No `forwardRef`; no hand-written `useMemo` / `useCallback` / `memo` where the compiler is on. (F-60, F-61)
+- [ ] No `forwardRef`; no hand-written `useMemo` / `useCallback` / `memo` outside a measured hot path. (F-60, F-61)
+- [ ] No `ui/` primitive wrapped or forked instead of extended in place. (F-93b)
+- [ ] Paginated list sends `page` / `per_page`, both in the key, and reads `data.items` / `data.total`. (F-160)
+- [ ] Error handling branches on `error.code`, never on message prose. (F-159)
 - [ ] List keys are stable ids. (F-67)
 - [ ] Loading, error, empty and success states all rendered. (F-72)
 - [ ] Real `<button>` / `<a>`; inputs have associated labels; icon-only controls have accessible names; images have `alt`. (F-73)
@@ -630,9 +687,9 @@ Run against the diff (U-02).
 - [ ] Named exports except Next's required defaults. (F-103)
 - [ ] Classes merged with `cn()`, variants with `cva`; no template-literal class soup. (F-91, F-92)
 - [ ] Tokens, not hardcoded colors, fonts, radii, shadows or arbitrary spacing. (F-95, F-142, F-143, F-145, F-146)
-- [ ] No reinvented `ui/` primitive; no regenerated primitive edited in place. (F-93b, F-139, F-141)
+- [ ] No reinvented `ui/` primitive. (F-139, F-141)
 - [ ] Form schema lives in one reviewable place, not inline in the component. (F-87b)
-- [ ] Form type inferred from the Zod schema; schema reused server-side. (F-75, F-84)
+- [ ] Form type inferred from the Zod schema. (F-75)
 - [ ] `defaultValues` provided; validation on blur or submit. (F-76, F-77)
 - [ ] Validation messages are actionable sentences. (F-81)
 - [ ] Submit disabled while pending, goes through a mutation, invalidates on success. (F-82, F-83)
@@ -719,6 +776,8 @@ That is request deduplication, a thing the query cache does for free. Read this 
 ## 3. Sources and provenance
 
 Merged **2026-09-14**. Conflicts and gaps are itemized in `STANDARDS-MERGE-NOTES.md` beside this file.
+
+**Rulings applied 2026-09-14, see `STANDARDS-MERGE-NOTES.md` section 1.**
 
 **Repo A: `thh-code-standards`**
 `https://github.com/ISHANKSHARMA146/thh-code-standards.git`
