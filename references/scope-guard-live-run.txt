@@ -1,0 +1,58 @@
+2026-09-14T08:30:06.258Z	thh-coding-steps:step-1-research	Write	allow	c:/thehirehub/.thh/plugin-smoke-test-version-endpoint/research.md	always-allowed
+2026-09-14T08:30:49.271Z	thh-coding-steps:step-2-plan	Read	deny	c:/users/ishan/.claude/projects/c--thehirehub/458f5477-bebf-4925-aa54-2ea81ece8b96/tool-results/b1j1eey5q.txt	out of scope
+2026-09-14T08:31:01.235Z	thh-coding-steps:step-2-plan	Read	allow	c:/thehirehub/.thh/plugin-smoke-test-version-endpoint/brief.md	always-allowed
+2026-09-14T08:31:01.720Z	thh-coding-steps:step-2-plan	Read	allow	c:/thehirehub/.thh/plugin-smoke-test-version-endpoint/research.md	always-allowed
+2026-09-14T08:31:07.438Z	thh-coding-steps:step-2-plan	Glob	deny	c:/thehirehub	out of scope
+2026-09-14T08:31:08.152Z	thh-coding-steps:step-2-plan	Glob	allow	c:/thehirehub/claude-skills/thh-coding-steps/skills/step-2	always-allowed
+2026-09-14T08:31:08.806Z	thh-coding-steps:step-2-plan	Glob	allow	c:/thehirehub/thh-backend	planner/impact repo read
+2026-09-14T08:31:14.865Z	thh-coding-steps:step-2-plan	Glob	allow	c:/thehirehub/thh-backend	planner/impact repo read
+2026-09-14T08:31:15.574Z	thh-coding-steps:step-2-plan	Glob	deny	c:/thehirehub/claude-skills	out of scope
+2026-09-14T08:31:16.248Z	thh-coding-steps:step-2-plan	Glob	allow	c:/thehirehub/thh-backend	planner/impact repo read
+2026-09-14T08:31:16.806Z	thh-coding-steps:step-2-plan	Read	allow	c:/thehirehub/claude-skills/thh-coding-steps/skills/step-2/skill.md	always-allowed
+2026-09-14T08:31:19.889Z	thh-coding-steps:step-2-plan	Glob	allow	c:/thehirehub/thh-backend	planner/impact repo read
+2026-09-14T08:31:29.379Z	thh-coding-steps:step-2-plan	Grep	allow	c:/thehirehub/thh-backend	planner/impact repo read
+2026-09-14T08:31:30.148Z	thh-coding-steps:step-2-plan	Glob	allow	c:/thehirehub/thh-backend	planner/impact repo read
+2026-09-14T08:31:30.854Z	thh-coding-steps:step-2-plan	Glob	allow	c:/thehirehub/thh-backend	planner/impact repo read
+2026-09-14T08:31:31.372Z	thh-coding-steps:step-2-plan	Glob	allow	c:/thehirehub/thh-backend	planner/impact repo read
+2026-09-14T08:31:44.392Z	thh-coding-steps:step-2-plan	Read	allow	c:/thehirehub/thh-backend/claude.md	always-allowed
+2026-09-14T08:31:54.199Z	thh-coding-steps:step-2-plan	Grep	allow	c:/thehirehub/thh-backend/app.py	planner/impact repo read
+2026-09-14T08:32:04.862Z	thh-coding-steps:step-2-plan	Read	allow	c:/thehirehub/thh-backend/app.py	planner/impact repo read
+2026-09-14T08:32:13.020Z	thh-coding-steps:step-2-plan	Read	allow	c:/thehirehub/claude-skills/thh-coding-steps/references/thh-code-standards.md	always-allowed
+2026-09-14T08:32:22.524Z	thh-coding-steps:step-2-plan	Grep	allow	c:/thehirehub/thh-backend/services/fx	planner/impact repo read
+2026-09-14T08:32:23.116Z	thh-coding-steps:step-2-plan	Read	allow	c:/thehirehub/thh-backend/tests/conftest.py	planner/impact repo read
+2026-09-14T08:32:27.431Z	thh-coding-steps:step-2-plan	Read	allow	c:/thehirehub/thh-backend/services/fx/routes.py	planner/impact repo read
+2026-09-14T08:32:35.251Z	thh-coding-steps:step-2-plan	Read	allow	c:/thehirehub/thh-backend/services/common/env_helpers.py	planner/impact repo read
+2026-09-14T08:32:35.837Z	thh-coding-steps:step-2-plan	Read	allow	c:/thehirehub/thh-backend/tests/common/test_cors_allow_headers.py	planner/impact repo read
+2026-09-14T08:32:36.821Z	thh-coding-steps:step-2-plan	Grep	allow	c:/thehirehub/thh-backend/app.py	planner/impact repo read
+2026-09-14T08:32:42.820Z	thh-coding-steps:step-2-plan	Grep	allow	c:/thehirehub/thh-backend/tests	planner/impact repo read
+2026-09-14T08:32:49.969Z	thh-coding-steps:step-2-plan	Read	allow	c:/thehirehub/thh-backend/tests/companies/test_check_company_exists.py	planner/impact repo read
+2026-09-14T08:33:52.109Z	thh-coding-steps:step-2-plan	Grep	allow	c:/thehirehub/thh-backend/app.py	planner/impact repo read
+2026-09-14T08:33:53.408Z	thh-coding-steps:step-2-plan	Grep	allow	c:/thehirehub/thh-backend/services	planner/impact repo read
+2026-09-14T08:34:06.362Z	thh-coding-steps:step-2-plan	Grep	allow	c:/thehirehub/claude-skills/thh-coding-steps/vendor/ponytail/ponytail.skill.md	always-allowed
+2026-09-14T08:35:00.616Z	thh-coding-steps:step-2-plan	Grep	allow	c:/thehirehub/thh-backend/app.py	planner/impact repo read
+2026-09-14T08:36:19.701Z	thh-coding-steps:step-2-plan	Write	allow	c:/thehirehub/.thh/plugin-smoke-test-version-endpoint/plan.md	always-allowed
+2026-09-14T08:38:55.243Z	thh-coding-steps:step-3-impact	Grep	allow	c:/thehirehub/thh-backend/graphify-out/graph.json	planner/impact repo read
+2026-09-14T08:38:56.400Z	thh-coding-steps:step-3-impact	Grep	allow	c:/thehirehub/thh-backend/graphify-out/graph_report.md	planner/impact repo read
+2026-09-14T08:41:17.796Z	thh-coding-steps:step-3-impact	Write	allow	c:/thehirehub/.thh/plugin-smoke-test-version-endpoint/impact.md	always-allowed
+2026-09-14T08:42:16.311Z	thh-coding-steps:step-4-gaps	Read	allow	c:/users/ishan/.claude/projects/c--thehirehub/212b5250-8718-4c14-a1ff-8bdd8104322d/tool-results/bacoygp5s.txt	always-allowed
+2026-09-14T08:44:11.050Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/.thh/plugin-smoke-test-version-endpoint/plan.md	always-allowed
+2026-09-14T08:44:11.867Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/app.py	gap audit plan file
+2026-09-14T08:44:12.634Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/app.py	gap audit plan file
+2026-09-14T08:44:13.397Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/app.py	gap audit plan file
+2026-09-14T08:44:14.226Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/app.py	gap audit plan file
+2026-09-14T08:44:14.997Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/app.py	gap audit plan file
+2026-09-14T08:44:15.971Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/app.py	gap audit plan file
+2026-09-14T08:44:16.463Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/services/fx/routes.py	gap audit plan file
+2026-09-14T08:44:17.108Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/tests/conftest.py	gap audit plan file
+2026-09-14T08:44:17.809Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/tests/companies/test_check_company_exists.py	gap audit plan file
+2026-09-14T08:44:18.525Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/tests/common/test_cors_allow_headers.py	gap audit plan file
+2026-09-14T08:44:19.164Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/rate_limit.py	gap audit plan file
+2026-09-14T08:44:19.985Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/env.example	gap audit plan file
+2026-09-14T08:44:20.634Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/dockerfile	gap audit plan file
+2026-09-14T08:44:21.474Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/.dockerignore	gap audit plan file
+2026-09-14T08:44:22.175Z	thh-coding-steps:step-4-gaps	Glob	deny	c:/thehirehub	out of scope
+2026-09-14T08:44:22.704Z	thh-coding-steps:step-4-gaps	Glob	deny	c:/thehirehub	out of scope
+2026-09-14T08:46:22.168Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/docker-compose.yml	gap audit plan file
+2026-09-14T08:46:22.573Z	thh-coding-steps:step-4-gaps	Read	allow	c:/thehirehub/thh-backend/entrypoint.sh	gap audit plan file
+2026-09-14T08:47:48.493Z	thh-coding-steps:step-4-gaps	Write	allow	c:/thehirehub/.thh/plugin-smoke-test-version-endpoint/plan.md	always-allowed
+2026-09-14T08:48:27.753Z	thh-coding-steps:step-4-gaps	Write	allow	c:/thehirehub/.thh/plugin-smoke-test-version-endpoint/gaps.md	always-allowed
