@@ -2,9 +2,10 @@
 name: step-8
 description: Step 8 of thh-coding-steps. Independent side-by-side testing from the brief, not the code (Opus tester, forked); failures fixed by a Sonnet subagent and re-tested. Writes test-report.md.
 context: fork
-agent: step-8-test
+agent: thh-coding-steps:step-8-test
 background: false
 disable-model-invocation: true
+allowed-tools: Bash(node *)
 ---
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/gate.js" 8`

@@ -2,9 +2,10 @@
 name: step-2
 description: Step 2 of thh-coding-steps. Module-level tracer-bullet plan (Fable, forked, repo read-only). Writes plan.md with the mandatory "## Files" section.
 context: fork
-agent: step-2-plan
+agent: thh-coding-steps:step-2-plan
 background: false
 disable-model-invocation: true
+allowed-tools: Bash(node *)
 ---
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/gate.js" 2`

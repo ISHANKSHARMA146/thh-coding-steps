@@ -2,9 +2,10 @@
 name: step-1
 description: Step 1 of thh-coding-steps. Research the approach in brief.md (Fable, forked, web only). Writes research.md.
 context: fork
-agent: step-1-research
+agent: thh-coding-steps:step-1-research
 background: false
 disable-model-invocation: true
+allowed-tools: Bash(node *)
 ---
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/gate.js" 1`

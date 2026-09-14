@@ -99,6 +99,7 @@ switch (cmd) {
   }
   case 'stop': { const st = load(); st.stopped_at = L.nowIso(); L.writeStatus(st); console.log('task stopped'); break; }
   case 'show': {
+    if (!L.readStatus()) { console.log('No active task. Start one with /thh-coding-steps:step-0 "<task in one sentence>".'); break; }
     const st = load();
     const mark = { pending: '[ ]', running: '[~]', done: '[d]', approved: '[x]', skipped: '[-]', blocked: '[!]', escalated: '[?]', 'changes-requested': '[c]' };
     console.log('Task: ' + st.task + '  "' + st.title + '"  ui=' + st.ui + '  repos=' + st.repos.join(',') + (st.stopped_at ? '  STOPPED' : ''));

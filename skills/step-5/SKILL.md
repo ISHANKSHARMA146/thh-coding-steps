@@ -2,9 +2,10 @@
 name: step-5
 description: Step 5 of thh-coding-steps. Static HTML mockup with THH's real tokens, all four states, screenshots (Sonnet, forked). Skipped automatically when the brief says ui: no.
 context: fork
-agent: step-5-mockup
+agent: thh-coding-steps:step-5-mockup
 background: false
 disable-model-invocation: true
+allowed-tools: Bash(node *)
 ---
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/gate.js" 5`

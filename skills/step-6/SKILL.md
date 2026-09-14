@@ -2,9 +2,10 @@
 name: step-6
 description: Step 6 of thh-coding-steps. Execute plan.md item by item in fresh per-repo worktrees, ponytail on, tests and verify after each item (Sonnet, forked). Writes execution-log.md.
 context: fork
-agent: step-6-execute
+agent: thh-coding-steps:step-6-execute
 background: false
 disable-model-invocation: true
+allowed-tools: Bash(node *)
 ---
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/gate.js" 6`

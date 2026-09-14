@@ -2,9 +2,10 @@
 name: step-9
 description: Step 9 of thh-coding-steps. Final audit against the brief plus a fresh-context adversarial cross-check of every finding (two Opus agents). Writes audit.md with a ship call and pr-body.md. Human ships.
 context: fork
-agent: step-9-audit
+agent: thh-coding-steps:step-9-audit
 background: false
 disable-model-invocation: true
+allowed-tools: Bash(node *)
 ---
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/gate.js" 9`

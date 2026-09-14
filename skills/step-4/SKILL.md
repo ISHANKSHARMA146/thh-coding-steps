@@ -2,9 +2,10 @@
 name: step-4
 description: Step 4 of thh-coding-steps. Gap audit of brief + plan + impact together (Fable, forked). Amends plan.md to v2, writes gaps.md. Human approves the plan after this.
 context: fork
-agent: step-4-gaps
+agent: thh-coding-steps:step-4-gaps
 background: false
 disable-model-invocation: true
+allowed-tools: Bash(node *)
 ---
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/gate.js" 4`

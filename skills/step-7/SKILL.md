@@ -2,9 +2,10 @@
 name: step-7
 description: Step 7 of thh-coding-steps. Diff-only standards + spec + ponytail review (Opus, forked); fixes by a Sonnet subagent, re-review of changed hunks, max 3 loops. Writes review.md.
 context: fork
-agent: step-7-review
+agent: thh-coding-steps:step-7-review
 background: false
 disable-model-invocation: true
+allowed-tools: Bash(node *)
 ---
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/gate.js" 7`

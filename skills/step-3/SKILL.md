@@ -2,9 +2,10 @@
 name: step-3
 description: Step 3 of thh-coding-steps. Integration and blast-radius map of plan.md across both repos (Opus, forked, read-only). Writes impact.md; escalates if anything is breaking.
 context: fork
-agent: step-3-impact
+agent: thh-coding-steps:step-3-impact
 background: false
 disable-model-invocation: true
+allowed-tools: Bash(node *)
 ---
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/gate.js" 3`

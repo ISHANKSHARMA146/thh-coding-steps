@@ -2,8 +2,10 @@
   "name": "thh-coding-steps",
   "description": "TheHireHub start-to-end coding steps: /step-0 to /step-9, one model and one scoped context per step, hard gates, shared .thh/<task>/ state.",
   "version": "0.1.0",
-  "author": { "name": "Ishank Sharma", "url": "https://github.com/ishanksharma146" },
+  "author": {
+    "name": "Ishank Sharma",
+    "url": "https://github.com/ishanksharma146"
+  },
   "repository": "https://github.com/ishanksharma146/thh-coding-steps",
-  "license": "MIT",
-  "hooks": "./hooks/hooks.json"
+  "license": "MIT"
 }
