@@ -42,6 +42,7 @@ const diff = () => {
   }
 };
 const worktrees = () => section('task worktrees (all code reads/writes happen here)', Object.entries(st.worktrees || {}).map(([r, w]) => r + ' -> ' + w + ' (branch ' + st.branch + ')').join('\n') || '(none created yet; step 6 creates them)');
+const hasRepo = (re) => (st.repos || []).some(r => re.test(r));
 const changeNotes = () => { const c = st.steps[n] && st.steps[n].change_notes; if (c) section('CHANGE NOTES from the human for this re-run', c); };
 
 section('task', 'slug: ' + slug + '\ntitle: ' + st.title + '\nui: ' + st.ui + '\nrepos: ' + st.repos.join(', ') + '\ntask dir: ' + td + '\nworkspace: ' + ws);
@@ -57,10 +58,19 @@ switch (n) {
     section('design system entry points (thh-frontend)', ['src/app/globals.css', 'components.json', 'tailwind.config.ts', 'src/components/ui'].map(p => p + ': ' + (fs.existsSync(path.join(fe, p)) ? 'exists' : 'absent')).join('\n') + '\n' + sh('git ls-files src/components/ui src/app/globals.css', fe));
     vendor('ponytail/ponytail.SKILL.md'); break;
   }
-  case 6: file('plan.md'); file('impact.md'); file('mockup.html'); standards(); worktrees(); vendor('ponytail/ponytail.SKILL.md'); break;
-  case 7: file('plan.md'); if (role === 'fix') file('review.md'); standards(); worktrees(); diff(); vendor('ponytail/ponytail-review.SKILL.md'); break;
+  case 6: file('plan.md'); file('impact.md'); file('mockup.html'); standards(); worktrees(); vendor('ponytail/ponytail.SKILL.md'); vendor('superpowers/verification-before-completion.SKILL.md'); break;
+  case 7: file('plan.md'); if (role === 'fix') file('review.md'); standards(); worktrees(); diff(); vendor('ponytail/ponytail-review.SKILL.md');
+    if (role !== 'fix') {
+      vendor('open-code-review/review-dimensions.md'); vendor('anthropic-security-review/security-audit-prompt.md'); vendor('microsoft-playbook/reviewer-guidance.md');
+      if (hasRepo(/backend/)) { vendor('open-code-review/python-rules.md'); vendor('microsoft-playbook/python-review-recipe.md'); }
+      if (hasRepo(/frontend/)) { vendor('open-code-review/ts-react-rules.md'); vendor('microsoft-playbook/ts-review-recipe.md'); }
+    }
+    break;
   case 8: file('brief.md'); file('mockup.html'); if (role === 'fix') { file('test-report.md'); file('plan.md'); file('impact.md'); } worktrees();
     section('how to run', 'Backend: C:\\thhvenv\\Scripts\\python.exe app.py in the backend worktree (port 5000). Frontend: npm run dev in the frontend worktree (port 3000). Backend first. Local DB is a staging clone; APP_ENV must stay development, BACKGROUND_WORKERS false.'); break;
-  case 9: file('brief.md'); file('plan.md'); file('impact.md'); file('gaps.md'); file('review.md'); file('test-report.md'); file('execution-log.md'); if (role === 'crosscheck') file('audit.md'); worktrees(); diff(); break;
+  case 9: file('brief.md'); file('plan.md'); file('impact.md'); file('gaps.md'); file('review.md'); file('test-report.md'); file('execution-log.md'); if (role === 'crosscheck') file('audit.md'); worktrees(); diff();
+    vendor('open-code-review/review-dimensions.md'); vendor('anthropic-security-review/security-audit-prompt.md'); vendor('superpowers/verification-before-completion.SKILL.md');
+    if (hasRepo(/backend/)) vendor('open-code-review/python-rules.md'); if (hasRepo(/frontend/)) vendor('open-code-review/ts-react-rules.md');
+    break;
 }
 process.stdout.write(out.join('\n') + '\n');

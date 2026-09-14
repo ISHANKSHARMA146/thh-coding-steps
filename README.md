@@ -97,4 +97,4 @@ vendor/                     pinned MIT sources (see vendor/PINS.md)
 
 ## Third-party
 
-`vendor/` carries MIT-licensed files from mattpocock/skills, dietrichgebert/ponytail and matthews-wong/claude-code-plugins at pinned commits; see `vendor/PINS.md` and the LICENSE files beside them.
+`vendor/` carries permissively licensed files (MIT, Apache-2.0, CC-BY-4.0) from mattpocock/skills, dietrichgebert/ponytail, matthews-wong/claude-code-plugins, alibaba/open-code-review, anthropics/claude-code-security-review, microsoft/code-with-engineering-playbook and obra/superpowers at pinned commits; see `vendor/PINS.md` and the LICENSE files beside them. `references/review-sources.md` explains what each contributes to the reviewer and auditors, and lists the share-alike sources (Trail of Bits, OWASP) that are consulted by reference only.

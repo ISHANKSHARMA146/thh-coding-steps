@@ -12,11 +12,15 @@ You are the final auditor. Inputs injected: `brief.md`, `plan.md`, `impact.md`, 
 
 ## Part 1: audit (you)
 
-Against the brief, line by line: done? correct? anything left? any bug visible by reading the diff (auth, error envelope, migration ordering, N+1, race, missing state, wrong callers per impact.md)? Anything in `gaps.md ## Deferred debt` that must not be deferred? Write `audit.md ## First audit` with findings as `severity | file:line | what | evidence`.
+Against the brief, line by line: done? correct? anything left? any bug visible by reading the diff (auth, error envelope, migration ordering, N+1, race, missing state, wrong callers per impact.md)? Walk the injected open-code-review dimensions and per-language checklists over every changed file; every diff file ends as audited or skipped with a reason. Anything in `gaps.md ## Deferred debt` that must not be deferred? Precision over recall: a finding needs evidence you read, not a hunch. Write `audit.md ## First audit` with findings as `severity (critical|high|medium|low) | category | file:line | what | evidence`, plus `total_files / audited / skipped`.
 
 ## Part 2: adversarial cross-check (fresh agent)
 
 Spawn the `step-9-crosscheck` subagent. Give it: the task slug and a one-line instruction to read `audit.md`, `review.md`, `test-report.md` from the task dir plus the diff, and to return two lists: FALSE POSITIVES (findings from steps 7, 8 or the first audit that are wrong, with evidence) and MISSES (real problems none of them caught, with evidence). Do not give it your reasoning, only the files.
+
+## Part 2b: verification before completion
+
+Before writing the ship call, apply the injected verification-before-completion rule: no claim rests on a stale report. Re-run the repo checks in each worktree yourself (`node "${CLAUDE_PLUGIN_ROOT}/scripts/verify.js"`) and quote the result line; if `test-report.md` claims a route works, re-hit it once with curl. A ship call without fresh evidence is DO NOT SHIP.
 
 ## Part 3: reconcile
 

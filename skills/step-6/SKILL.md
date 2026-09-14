@@ -5,7 +5,7 @@ context: fork
 agent: thh-coding-steps:step-6-execute
 background: false
 disable-model-invocation: true
-allowed-tools: Bash(node *)
+allowed-tools: Bash(node *), Bash(git *), Bash(npm *), Bash(npx *), Bash(curl *), Bash(*python.exe *), Bash(cd *)
 ---
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/gate.js" 6`

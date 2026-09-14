@@ -22,7 +22,7 @@ If a denied file read blocks you: do not work around it. Record `status.js quest
 
 ## Exit (verify-before-review)
 
-Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/verify.js" --log`. If `RESULT: FAIL`, fix within the plan's files and re-run; if it still fails after two attempts, escalate with `status.js question 6`. On PASS: `status.js set 6 done`.
+Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/verify.js" --log`. If `RESULT: FAIL`, fix within the plan's files and re-run; if it still fails after two attempts, escalate with `status.js question 6`. On PASS: `status.js set 6 done`. The injected verification-before-completion rule applies to your reply: every "done" and every "tests pass" you write must quote the command output you just saw, not a memory of an earlier run.
 
 ## Reply (only this)
 

@@ -1,7 +1,7 @@
 {
   "name": "thh-coding-steps",
   "description": "TheHireHub start-to-end coding steps: /step-0 to /step-9, one model and one scoped context per step, hard gates, shared .thh/<task>/ state.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "author": {
     "name": "Ishank Sharma",
     "url": "https://github.com/ishanksharma146"
