@@ -4,7 +4,6 @@ description: Step 3 of thh-coding-steps. Integration and blast-radius map of pla
 context: fork
 agent: thh-coding-steps:step-3-impact
 background: false
-disable-model-invocation: true
 allowed-tools: Bash(node *)
 ---
 

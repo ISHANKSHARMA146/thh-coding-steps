@@ -4,7 +4,6 @@ description: Step 4 of thh-coding-steps. Gap audit of brief + plan + impact toge
 context: fork
 agent: thh-coding-steps:step-4-gaps
 background: false
-disable-model-invocation: true
 allowed-tools: Bash(node *)
 ---
 

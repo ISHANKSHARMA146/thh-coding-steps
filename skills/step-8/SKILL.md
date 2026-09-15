@@ -4,7 +4,6 @@ description: Step 8 of thh-coding-steps. Independent side-by-side testing from t
 context: fork
 agent: thh-coding-steps:step-8-test
 background: false
-disable-model-invocation: true
 allowed-tools: Bash(node *), Bash(git *), Bash(npm *), Bash(npx *), Bash(curl *), Bash(*python.exe *), Bash(cd *)
 ---
 

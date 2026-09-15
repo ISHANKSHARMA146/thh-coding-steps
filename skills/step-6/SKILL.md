@@ -4,7 +4,6 @@ description: Step 6 of thh-coding-steps. Execute plan.md item by item in fresh p
 context: fork
 agent: thh-coding-steps:step-6-execute
 background: false
-disable-model-invocation: true
 allowed-tools: Bash(node *), Bash(git *), Bash(npm *), Bash(npx *), Bash(curl *), Bash(*python.exe *), Bash(cd *)
 ---
 

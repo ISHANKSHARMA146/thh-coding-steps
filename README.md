@@ -17,6 +17,27 @@ One installable Claude Code plugin that turns any TheHireHub coding task into a 
 
 Utilities: `step-status`, `step-approve [n]`, `step-change "<notes>"`, `step-stop`, `step-reset <n>`, `install`.
 
+### Who may start a step
+
+Steps 1-9 and `step-status` can be invoked by Claude itself, so a run chains without the human
+retyping a slash command at every step. What protects the human's review is `gate.js`, not the
+invocation flag: a step is refused while the previous step carries a **human** gate and is not yet
+`approved`. That leaves three checkpoints, unchanged:
+
+```
+/step-0  →  human approves brief.md
+            Claude may run 1 → 2 → 3 → 4, then stops
+            human approves gaps.md
+            Claude may run 5, then stops
+            human approves mockup.html
+            Claude may run 6 → 7 → 8 → 9, then stops
+            human approves audit.md and ships
+```
+
+`step-0` stays human-invoked — the grilling is a conversation. So do `step-approve`, `step-change`,
+`step-reset`, `step-stop` and `install`: they are the human's control surface, and a model able to
+call `step-approve` could approve its own work and void every gate above.
+
 All state lives in `<workspace>/.thh/<task-slug>/`. No step relies on chat memory. Any step can be re-run from disk.
 
 ### Tasks, sessions and concurrency

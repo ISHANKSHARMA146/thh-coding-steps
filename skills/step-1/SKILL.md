@@ -4,7 +4,6 @@ description: Step 1 of thh-coding-steps. Research the approach in brief.md (Fabl
 context: fork
 agent: thh-coding-steps:step-1-research
 background: false
-disable-model-invocation: true
 allowed-tools: Bash(node *)
 ---
 

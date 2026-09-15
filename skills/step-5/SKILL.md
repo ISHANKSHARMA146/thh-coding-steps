@@ -4,7 +4,6 @@ description: Step 5 of thh-coding-steps. Static HTML mockup with THH's real toke
 context: fork
 agent: thh-coding-steps:step-5-mockup
 background: false
-disable-model-invocation: true
 allowed-tools: Bash(node *)
 ---
 
