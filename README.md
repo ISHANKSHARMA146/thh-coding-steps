@@ -19,6 +19,37 @@ Utilities: `step-status`, `step-approve [n]`, `step-change "<notes>"`, `step-sto
 
 All state lives in `<workspace>/.thh/<task-slug>/`. No step relies on chat memory. Any step can be re-run from disk.
 
+### Tasks, sessions and concurrency
+
+**Which task a command acts on is a property of the session that runs it.** Each Claude Code session
+is bound to one task (`.thh/sessions/<session-id>` → slug, keyed on `CLAUDE_CODE_SESSION_ID`), and
+each task records the session that owns it in `status.json` as `owner_session`. A command that would
+mutate a task owned by a *different* session is refused rather than silently applied.
+
+This is what makes two sessions safe in one workspace — two tasks, two sets of worktrees, no
+cross-talk. Before it, `.thh/current` was a single machine-global pointer: whichever session ran
+`init` last captured every later command, so two concurrent tasks would overwrite each other's
+`status.json`, inject each other's `brief.md` into step agents, and remove each other's worktrees.
+
+```bash
+node scripts/status.js tasks            # list tasks, their step, and who owns each
+node scripts/status.js use <slug>       # bind THIS session to an existing task
+node scripts/status.js use <slug> --force   # take over a task another session owns
+```
+
+Use `--force` only when the owning session has actually stopped; two live sessions on one task still
+race on `status.json`. Every command also accepts `--session <id>` (for callers that know their own
+id) and honours a `THH_TASK` environment variable as an explicit override. `.thh/current` is still
+written, purely so a shell with no session id keeps working; it is never trusted for ownership.
+
+### Repos
+
+`status.json.repos` accepts either a bare name resolved against the workspace root
+(`thh-backend`) or an **absolute path** (`D:\Athena\main\thh-backend`). Absolute paths are required
+when a task's repos are not siblings under one root — for example a task spanning
+`D:\Athena\main\thh-backend` and a new repo at `D:\Athena\thh-extension`. Worktrees default to
+`<workspace>/worktrees/` and can be redirected with `THH_WORKTREES`.
+
 ## Install
 
 Public repo, doubles as a one-plugin marketplace named `thh`. From any terminal:
