@@ -7,11 +7,16 @@ const fs = require('fs');
 const path = require('path');
 const L = require('./lib');
 
-const n = Number(process.argv[2]);
-const slug = L.currentSlug();
+const argv = process.argv.slice(2);
+const sessIx = argv.indexOf('--session');
+const SID = L.sessionId(sessIx >= 0 ? argv[sessIx + 1] : '');
+if (sessIx >= 0) argv.splice(sessIx, 2);
+const n = Number(argv[0]);
+const slug = L.currentSlug(SID);
 const st = L.readStatus(slug);
 function fail(msg) { console.log('GATE BLOCKED step ' + n + ': ' + msg); process.exit(2); }
-if (!slug || !st) fail('no active task. Run /thh-coding-steps:step-0 "<task>" first.');
+if (!slug || !st) fail('no active task for this session. Run /thh-coding-steps:step-0 "<task>" first, or bind an existing one with status.js use <slug>.');
+if (L.ownedByOther(st, SID)) fail('task "' + slug + '" is owned by session ' + L.ownerOf(st) + ', not this one. Run status.js use ' + slug + ' --force only if that session has stopped.');
 if (st.stopped_at) fail('task "' + slug + '" was stopped. Run /thh-coding-steps:step-reset <n> to reopen.');
 
 const p = L.prevStep(n, st);

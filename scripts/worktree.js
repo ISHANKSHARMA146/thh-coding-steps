@@ -10,8 +10,15 @@ const path = require('path');
 const { execSync } = require('child_process');
 const L = require('./lib');
 
-const cmd = process.argv[2];
-const st = L.readStatus(); if (!st) { console.error('no active task'); process.exit(2); }
+const argv = process.argv.slice(2);
+const sessIx = argv.indexOf('--session');
+const SID = L.sessionId(sessIx >= 0 ? argv[sessIx + 1] : '');
+if (sessIx >= 0) argv.splice(sessIx, 2);
+const cmd = argv[0];
+const slug = L.currentSlug(SID);
+const st = slug ? L.readStatus(slug) : null;
+if (!st) { console.error('no active task for this session'); process.exit(2); }
+if (L.ownedByOther(st, SID)) { console.error('task ' + st.task + ' is owned by session ' + L.ownerOf(st) + '; refusing to touch its worktrees'); process.exit(2); }
 const ws = L.workspaceRoot();
 const sh = (c, cwd) => execSync(c, { cwd, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }).trim();
 
@@ -19,8 +26,8 @@ if (cmd === 'create') {
   st.worktrees = st.worktrees || {};
   st.branch = 'feat/' + st.task;
   for (const repo of st.repos) {
-    const repoDir = path.join(ws, repo);
-    const wt = path.join(ws, 'worktrees', st.task + '-' + repo);
+    const repoDir = L.repoPath(repo, ws);
+    const wt = path.join(L.worktreeRoot(ws), st.task + '-' + L.repoName(repo));
     if (fs.existsSync(wt)) { console.log(repo + ': worktree exists at ' + wt); st.worktrees[repo] = wt; continue; }
     let base = 'HEAD';
     try { sh('git show-ref --verify --quiet refs/heads/dev', repoDir); base = 'dev'; } catch (_) { /* no local dev branch */ }
@@ -37,15 +44,15 @@ if (cmd === 'create') {
     st.worktrees[repo] = wt;
     console.log(repo + ': ' + wt + ' on ' + st.branch + ' (base ' + base + ')');
   }
-  L.writeStatus(st);
+  L.writeStatus(st, st.task);
 } else if (cmd === 'remove') {
   for (const [repo, wt] of Object.entries(st.worktrees || {})) {
-    const repoDir = path.join(ws, repo);
+    const repoDir = L.repoPath(repo, ws);
     try { sh(`git worktree remove --force "${wt}"`, repoDir); console.log(repo + ': removed ' + wt + ' (branch ' + st.branch + ' kept)'); }
     catch (e) { console.log(repo + ': could not remove ' + wt + ': ' + (e.stderr || e.message)); }
   }
   st.worktrees = {};
-  L.writeStatus(st);
+  L.writeStatus(st, st.task);
 } else {
   console.error('usage: worktree.js create|remove'); process.exit(2);
 }

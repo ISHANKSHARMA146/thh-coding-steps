@@ -8,8 +8,12 @@ const path = require('path');
 const { execSync } = require('child_process');
 const L = require('./lib');
 
-const n = Number(process.argv[2]); const role = process.argv[3] || 'main';
-const slug = L.currentSlug(); const st = L.readStatus(slug); if (!st) process.exit(0);
+const argv = process.argv.slice(2);
+const sessIx = argv.indexOf('--session');
+const SID = L.sessionId(sessIx >= 0 ? argv[sessIx + 1] : '');
+if (sessIx >= 0) argv.splice(sessIx, 2);
+const n = Number(argv[0]); const role = argv[1] || 'main';
+const slug = L.currentSlug(SID); const st = slug ? L.readStatus(slug) : null; if (!st) process.exit(0);
 const td = L.taskDir(slug); const ws = L.workspaceRoot();
 const plugin = process.env.CLAUDE_PLUGIN_ROOT || path.join(__dirname, '..');
 const out = [];
@@ -26,7 +30,7 @@ const bounded = (label, text, name, keep) => {
 };
 const repoTree = () => {
   for (const repo of st.repos) {
-    const dir = path.join(ws, repo); if (!fs.existsSync(dir)) continue;
+    const dir = L.repoPath(repo, ws); if (!fs.existsSync(dir)) continue;
     const tree = sh('git ls-files', dir).split('\n').filter(l => l && !/^(graphify-out|audit-reports|docs\/|prompts\/|.*\.(png|jpg|svg|ico|lock|snap))/.test(l)).join('\n');
     bounded('repo tree: ' + repo + ' (git ls-files, noise filtered)', tree, 'repo-tree-' + repo + '.txt', 400);
   }
@@ -54,7 +58,8 @@ switch (n) {
   case 4: file('brief.md'); file('plan.md'); file('impact.md'); file('research.md'); break;
   case 5: {
     file('brief.md'); file('plan.md');
-    const fe = path.join(ws, 'thh-frontend');
+    const feRepo = (st.repos || []).find(r => /frontend/i.test(r)) || 'thh-frontend';
+    const fe = L.repoPath(feRepo, ws);
     section('design system entry points (thh-frontend)', ['src/app/globals.css', 'components.json', 'tailwind.config.ts', 'src/components/ui'].map(p => p + ': ' + (fs.existsSync(path.join(fe, p)) ? 'exists' : 'absent')).join('\n') + '\n' + sh('git ls-files src/components/ui src/app/globals.css', fe));
     vendor('ponytail/ponytail.SKILL.md'); break;
   }

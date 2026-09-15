@@ -37,9 +37,9 @@ function main() {
   const abs = path.isAbsolute(target) ? target : path.join(h.cwd || process.cwd(), target);
   const p = L.norm(abs);
 
-  const slug = L.currentSlug(); const st = L.readStatus(slug);
+  const slug = L.currentSlug(h.session_id); const st = slug ? L.readStatus(slug) : null;
   const log = (decision, reason) => L.appendLog(slug || '_no-task', [L.nowIso(), agent, tool, decision, p, reason].join('\t'));
-  if (!st) { log('deny', 'no active task'); return deny('scope-guard: no active task in .thh/current; step agents cannot run without one.'); }
+  if (!st) { log('deny', 'no active task'); return deny('scope-guard: this session is not bound to a task; step agents cannot run without one. Run /thh-coding-steps:step-0, or bind with status.js use <slug>.'); }
 
   const ws = L.norm(L.workspaceRoot());
   const task = L.norm(L.taskDir(slug));
@@ -55,7 +55,7 @@ function main() {
   // Roots: worktrees for this task first, then the main repo checkouts.
   const roots = [];
   for (const [repo, wt] of Object.entries(st.worktrees || {})) roots.push({ repo, root: L.norm(wt), kind: 'worktree' });
-  for (const repo of st.repos || []) roots.push({ repo, root: L.norm(path.join(L.workspaceRoot(), repo)), kind: 'repo' });
+  for (const repo of st.repos || []) roots.push({ repo: L.repoName(repo), root: L.norm(L.repoPath(repo, L.workspaceRoot())), kind: 'repo' });
   let hit = null;
   for (const r of roots) if (under(r.root)) { hit = { ...r, rel: p.slice(r.root.length + 1) }; break; }
 

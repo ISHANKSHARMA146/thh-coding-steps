@@ -32,11 +32,58 @@ function workspaceRoot() {
   }
 }
 function thhDir() { return path.join(workspaceRoot(), '.thh'); }
-function currentSlug() {
+
+// ---- session binding -------------------------------------------------------
+// Which task a command acts on is a property of the SESSION that runs it, not a
+// machine-global pointer. Before this, `.thh/current` was a single mutable file
+// shared by every Claude process on the machine: two sessions running two tasks
+// in one workspace would silently write each other's status.json, inject each
+// other's brief/plan into step agents, and tear down each other's worktrees.
+// Resolution order: THH_TASK env (explicit override) -> this session's binding
+// -> the legacy `current` file (kept so a shell with no session id still works).
+// The legacy fallback is safe because every task records `owner_session`, and
+// load() refuses to mutate a task owned by a different live session.
+function sessionId(explicit) {
+  return String(explicit || process.env.CLAUDE_CODE_SESSION_ID || process.env.CLAUDE_SESSION_ID || '').trim();
+}
+function sessionsDir() { return path.join(thhDir(), 'sessions'); }
+function sessionFile(sid) { return path.join(sessionsDir(), String(sid).replace(/[^A-Za-z0-9._-]/g, '_')); }
+function bindSession(slug, sid) {
+  const s = sessionId(sid);
+  if (s) { fs.mkdirSync(sessionsDir(), { recursive: true }); fs.writeFileSync(sessionFile(s), slug + '\n'); }
+  // Legacy pointer, for a shell that cannot see a session id. Never trusted for
+  // ownership — that lives in status.json.
+  fs.writeFileSync(path.join(thhDir(), 'current'), slug + '\n');
+}
+function unbindSession(sid) {
+  const s = sessionId(sid);
+  try { if (s && fs.existsSync(sessionFile(s))) fs.unlinkSync(sessionFile(s)); } catch (_) { /* best effort */ }
+}
+function currentSlug(sid) {
+  if (process.env.THH_TASK) return process.env.THH_TASK.trim();
+  const s = sessionId(sid);
+  if (s) { const f = sessionFile(s); if (fs.existsSync(f)) return fs.readFileSync(f, 'utf8').trim(); }
   const f = path.join(thhDir(), 'current');
   return fs.existsSync(f) ? fs.readFileSync(f, 'utf8').trim() : '';
 }
+// '' = free to act on. Otherwise the session id that owns this task.
+function ownerOf(st) { return (st && st.owner_session) ? String(st.owner_session) : ''; }
+function ownedByOther(st, sid) {
+  const mine = sessionId(sid); const owner = ownerOf(st);
+  return Boolean(mine && owner && owner !== mine);
+}
+
 function taskDir(slug) { return path.join(thhDir(), slug || currentSlug()); }
+
+// A repo in status.json may be a bare name (resolved against the workspace, the
+// original contract) or an absolute path. Absolute is required for tasks whose
+// repos are not siblings under one workspace root — e.g. a task spanning
+// D:\Athena\main\thh-backend and D:\Athena\thh-extension.
+function repoPath(repo, ws) { return path.isAbsolute(repo) ? repo : path.join(ws || workspaceRoot(), repo); }
+function repoName(repo) { return path.basename(String(repo).replace(/[\\/]+$/, '')); }
+function worktreeRoot(ws) {
+  return process.env.THH_WORKTREES ? path.resolve(process.env.THH_WORKTREES) : path.join(ws || workspaceRoot(), 'worktrees');
+}
 function statusPath(slug) { return path.join(taskDir(slug), 'status.json'); }
 function readStatus(slug) {
   const f = statusPath(slug);
@@ -84,4 +131,6 @@ function appendLog(slug, line) {
 }
 
 module.exports = { STEPS, norm, workspaceRoot, thhDir, currentSlug, taskDir, statusPath,
-  readStatus, writeStatus, slugify, nowIso, prevStep, listedPaths, appendLog };
+  readStatus, writeStatus, slugify, nowIso, prevStep, listedPaths, appendLog,
+  sessionId, sessionsDir, sessionFile, bindSession, unbindSession, ownerOf, ownedByOther,
+  repoPath, repoName, worktreeRoot };
