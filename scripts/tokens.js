@@ -17,9 +17,10 @@ function main() {
   const m = String(h.agent_type || '').match(/(?:^|:)step-(\d)/);
   if (!m) return;
   const n = Number(m[1]);
-  const st = L.readStatus(); if (!st) return;
+  const slug = L.currentSlug(h.session_id);
+  const st = slug ? L.readStatus(slug) : null; if (!st) return;
   // Diagnostic: record which fields the hook input carried, so a zero count can be explained.
-  fs.appendFileSync(path.join(L.taskDir(), 'tokens.log'), [L.nowIso(), h.agent_type, 'input-keys', Object.keys(h).join(','), h.agent_transcript_path || '', h.transcript_path || ''].join('\t') + '\n');
+  fs.appendFileSync(path.join(L.taskDir(slug), 'tokens.log'), [L.nowIso(), h.agent_type, 'input-keys', Object.keys(h).join(','), h.agent_transcript_path || '', h.transcript_path || ''].join('\t') + '\n');
   const own = h.agent_transcript_path && fs.existsSync(h.agent_transcript_path);
   const file = own ? h.agent_transcript_path : h.transcript_path;
   if (!file || !fs.existsSync(file)) return;
@@ -44,6 +45,6 @@ function main() {
   st.steps[n].tokens_approx = (st.steps[n].tokens_approx || 0) + total;
   st.steps[n].tokens_breakdown = br;
   st.steps[n].tokens_source = own ? 'agent-transcript' : 'main-transcript-window';
-  L.writeStatus(st);
-  fs.appendFileSync(path.join(L.taskDir(), 'tokens.log'), [L.nowIso(), h.agent_type, total, st.steps[n].tokens_source].join('\t') + '\n');
+  L.writeStatus(st, slug);
+  fs.appendFileSync(path.join(L.taskDir(slug), 'tokens.log'), [L.nowIso(), h.agent_type, total, st.steps[n].tokens_source].join('\t') + '\n');
 }

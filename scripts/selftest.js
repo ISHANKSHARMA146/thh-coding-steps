@@ -82,6 +82,55 @@ for (const [label, got, want] of cases) expect(label + ' -> ' + want, got === wa
 const log = fs.readFileSync(path.join(td, 'scope-guard.log'), 'utf8');
 expect('denials are logged with agent_type', /step-6-execute\tRead\tdeny/.test(log));
 console.log('\nscope-guard.log sample:\n' + log.split('\n').filter(l => /deny/.test(l)).slice(0, 3).join('\n'));
+
+// ---- two sessions, two tasks, one workspace -------------------------------
+// The regression this guards: `.thh/current` used to be a single machine-global
+// pointer, so whichever session ran `init` last owned every later command. Two
+// sessions in one workspace would silently write each other's status.json,
+// inject each other's brief into step agents, and tear down each other's worktrees.
+console.log('\n--- concurrent sessions ---');
+const asSession = (sid, script, args, extraEnv) => spawnSync(process.execPath, [path.join(S, script), ...args],
+  { encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_SESSION_ID: sid, ...(extraEnv || {}) } });
+
+const A_SID = 'sess-aaaa', B_SID = 'sess-bbbb';
+const slugA = asSession(A_SID, 'status.js', ['init', 'Alpha task one']).stdout.trim();
+const slugB = asSession(B_SID, 'status.js', ['init', 'Beta task two']).stdout.trim();
+expect('two sessions get two distinct tasks', Boolean(slugA && slugB && slugA !== slugB), slugA + ' / ' + slugB);
+
+// B init'd last, so the legacy pointer names B. A must still resolve to its own task.
+fs.writeFileSync(path.join(ws, '.thh', slugA, 'brief.md'), '# A\n');
+asSession(A_SID, 'status.js', ['set', '0', 'done']);
+const stA = JSON.parse(fs.readFileSync(path.join(ws, '.thh', slugA, 'status.json'), 'utf8'));
+const stB = JSON.parse(fs.readFileSync(path.join(ws, '.thh', slugB, 'status.json'), 'utf8'));
+expect("A's write lands in A", stA.steps[0].status === 'done', JSON.stringify(stA.steps[0]));
+expect("A's write does NOT touch B", stB.steps[0].status === 'running', JSON.stringify(stB.steps[0]));
+
+// Ownership guard: A may not mutate B's task even when pointed straight at it.
+const forced = asSession(A_SID, 'status.js', ['set', '1', 'blocked'], { THH_TASK: slugB });
+expect("A refused when acting on B's task", forced.status === 2 && /owned by session/.test(forced.stderr), forced.stderr);
+
+// Explicit handover is allowed, recorded, and needs --force while the owner is live.
+const nofor = asSession(A_SID, 'status.js', ['use', slugB]);
+expect('use without --force refuses a live owner', nofor.status === 2 && /owned by session/.test(nofor.stderr), nofor.stderr);
+const took = asSession(A_SID, 'status.js', ['use', slugB, '--force']);
+const stB2 = JSON.parse(fs.readFileSync(path.join(ws, '.thh', slugB, 'status.json'), 'utf8'));
+expect('use --force transfers ownership', took.status === 0 && stB2.owner_session === A_SID, took.stdout + took.stderr);
+
+// gate refuses a task this session no longer owns.
+const gB = asSession(B_SID, 'gate.js', ['1'], { THH_TASK: slugB });
+expect('gate blocks a session that lost the task', gB.status === 2 && /owned by session/.test(gB.stdout), gB.stdout);
+
+// ---- absolute repo paths --------------------------------------------------
+// Needed for a task whose repos are not siblings under one workspace root.
+const absRepo = path.join(ws, 'thh-backend');
+const slugC = asSession('sess-cccc', 'status.js', ['init', 'Gamma absolute repos', absRepo]).stdout.trim();
+const stC = JSON.parse(fs.readFileSync(path.join(ws, '.thh', slugC, 'status.json'), 'utf8'));
+expect('init accepts an absolute repo path', stC.repos[0] === absRepo, JSON.stringify(stC.repos));
+const L = require('./lib');
+expect('repoPath passes an absolute repo through', L.repoPath(absRepo, path.join(ws, 'nowhere')) === absRepo);
+expect('repoPath still joins a bare repo name', L.repoPath('thh-frontend', ws) === path.join(ws, 'thh-frontend'));
+expect('repoName strips the directory', L.repoName(absRepo) === 'thh-backend');
+
 fs.rmSync(ws, { recursive: true, force: true });
 console.log(fails ? '\n' + fails + ' FAILED' : '\nALL PASSED');
 process.exit(fails ? 1 : 0);

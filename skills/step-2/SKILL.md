@@ -4,7 +4,6 @@ description: Step 2 of thh-coding-steps. Module-level tracer-bullet plan (Fable,
 context: fork
 agent: thh-coding-steps:step-2-plan
 background: false
-disable-model-invocation: true
 allowed-tools: Bash(node *)
 ---
 

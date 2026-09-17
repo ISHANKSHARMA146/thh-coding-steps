@@ -4,7 +4,6 @@ description: Step 9 of thh-coding-steps. Final audit against the brief plus a fr
 context: fork
 agent: thh-coding-steps:step-9-audit
 background: false
-disable-model-invocation: true
 allowed-tools: Bash(node *), Bash(git *), Bash(npm *), Bash(npx *), Bash(curl *), Bash(*python.exe *), Bash(cd *)
 ---
 

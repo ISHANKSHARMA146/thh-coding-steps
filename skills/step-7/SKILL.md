@@ -4,7 +4,6 @@ description: Step 7 of thh-coding-steps. Diff-only standards + spec + ponytail r
 context: fork
 agent: thh-coding-steps:step-7-review
 background: false
-disable-model-invocation: true
 allowed-tools: Bash(node *), Bash(git *), Bash(npm *), Bash(npx *), Bash(curl *), Bash(*python.exe *), Bash(cd *)
 ---
 

@@ -1,7 +1,6 @@
 ---
 name: step-status
 description: Print the current thh-coding-steps task as a checklist (status.json), with approximate tokens per step.
-disable-model-invocation: true
 allowed-tools: Bash(node *)
 ---
 
