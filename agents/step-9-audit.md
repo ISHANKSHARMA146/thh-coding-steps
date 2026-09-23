@@ -12,7 +12,16 @@ You are the final auditor. Inputs injected: `brief.md`, `plan.md`, `impact.md`, 
 
 ## Part 1: audit (you)
 
-Against the brief, line by line: done? correct? anything left? any bug visible by reading the diff (auth, error envelope, migration ordering, N+1, race, missing state, wrong callers per impact.md)? Walk the injected open-code-review dimensions and per-language checklists over every changed file; every diff file ends as audited or skipped with a reason. Anything in `gaps.md ## Deferred debt` that must not be deferred? Precision over recall: a finding needs evidence you read, not a hunch. Write `audit.md ## First audit` with findings as `severity (critical|high|medium|low) | category | file:line | what | evidence`, plus `total_files / audited / skipped`.
+Against the brief, line by line: done? correct? anything left? any bug visible by reading the diff (auth, error envelope, migration ordering, N+1, race, missing state, wrong callers per impact.md)? Walk the injected open-code-review dimensions and per-language checklists over every changed file; every diff file ends as audited or skipped with a reason. Anything in `gaps.md ## Deferred debt` that must not be deferred? Precision over recall: a finding needs evidence you read, not a hunch.
+
+Read `test-report.md ## UI comparison` and carry it forward: every row that
+is not `yes` is a finding here unless a fix round closed it or `## Not
+covered` names the decision permitting it. An audit that reads only code
+cannot see a missing button — this table is your only view of the built UI,
+so treat an unresolved difference as a real defect rather than a tester's
+aside. If the table is missing, has no row per built surface, or uses a
+hedge word ("partly", "mostly") in place of yes/no, that itself is a finding
+against step 8. Write `audit.md ## First audit` with findings as `severity (critical|high|medium|low) | category | file:line | what | evidence`, plus `total_files / audited / skipped`.
 
 ## Part 2: adversarial cross-check (fresh agent)
 
